@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ASSAD окна — ваш бонус</title>
+<meta name="theme-color" content="#0b1d3a">
+<style>
+  :root{--bg:#0b1d3a;--fg:#fff;--muted:#cfe3ff;--brand:#1e5bb8}
+  html,body{height:100%;margin:0}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:#0b1d3a;color:#fff}
+  .wrap{max-width:560px;margin:0 auto;padding:24px 16px 40px}
+  .card{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.14);
+        border-radius:16px;padding:18px}
+  h1{font-size:24px;margin:4px 0 6px}
+  p{margin:.2rem 0;color:var(--muted)}
+  .btn{margin-top:16px;width:100%;padding:16px;border:none;border-radius:14px;
+       font-size:18px;font-weight:800;color:#fff;background:linear-gradient(135deg,#3c7ee6,#1e5bb8);
+       cursor:pointer; -webkit-tap-highlight-color:transparent}
+  .btn:active{transform:scale(.98)}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .bonus{margin-top:18px;padding:18px;border-radius:14px;background:rgba(255,255,255,.08);
+         border:1px solid rgba(255,255,255,.18);display:none;font-size:22px;font-weight:800}
+  .note{font-size:13px;color:#cfe3ff;margin-top:12px}
+  .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#111a;color:#fff;
+         padding:10px 14px;border-radius:10px;opacity:0;transition:.25s}
+  .toast.show{opacity:1}
+  @media (min-width:480px){ h1{font-size:28px} .btn{font-size:19px} .bonus{font-size:24px} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Открой свой бонус</h1>
+      <p>С одного устройства — одна попытка.</p>
+      <button id="getBonus" class="btn" onclick="window._getBonus && window._getBonus()">ПОЛУЧИТЬ БОНУС</button>
+      <div id="bonusBox" class="bonus"></div>
+      <div class="note">Покажите экран со своим бонусом в салоне ASSAD окна. Срок — 14 дней.</div>
+    </div>
+  </div>
+  <div id="toast" class="toast"></div>
+
+<script>
+(function(){
+  // Максимальная совместимость для webview (ES5)
+  var BONUSES = [
+    '15% скидка на окна',
+    'Бесплатный замер',
+    'Сертификат на москитную сетку',
+    'Установка в подарок'
+  ];
+  var KEY = 'assad_bonus_tap_v1';
+  var btn = document.getElementById('getBonus');
+  var box = document.getElementById('bonusBox');
+  var toast = document.getElementById('toast');
+
+  // Резервный обработчик для очень строгих webview
+  window._getBonus = function(){
+    if(read()){ return notify('Попытка уже использована.'); }
+    var idx = Math.floor(Math.random()*BONUSES.length);
+    var prize = BONUSES[idx];
+    write({ prize: prize, ts: new Date().toISOString() });
+    show(prize);
+    lock(true);
+    notify('Ваш бонус зафиксирован 🎉');
+  };
+
+  // Обычный обработчик
+  if(btn && btn.addEventListener){ btn.addEventListener('click', window._getBonus, false); }
+
+  // Если уже участвовали — сразу показываем
+  var stored = read();
+  if(stored){ show(stored.prize); lock(true); }
+
+  function show(text){ box.textContent = text; box.style.display = 'block'; }
+  function lock(s){ if(btn) btn.disabled = !!s; }
+  function notify(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(function(){ toast.classList.remove('show'); }, 2200);
+  }
+
+  // Хранилище: localStorage + cookie для надёжности
+  function read(){
+    try{
+      var raw = (window.localStorage ? localStorage.getItem(KEY) : null) || readCookie(KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+  function write(obj){
+    var s = JSON.stringify(obj);
+    try{ if(window.localStorage) localStorage.setItem(KEY, s); }catch(e){}
+    writeCookie(KEY, s, 400);
+  }
+  function writeCookie(n,v,d){
+    var t=new Date(); t.setTime(t.getTime()+d*24*60*60*1000);
+    document.cookie = n+'='+encodeURIComponent(v)+'; expires='+t.toUTCString()+'; path=/; samesite=lax';
+  }
+  function readCookie(n){
+    var m=document.cookie.match(new RegExp('(^| )'+n+'=([^;]+)'));
+    return m ? decodeURIComponent(m[2]) : null;
+  }
+})();
+</script>
+</body>
+</html>
